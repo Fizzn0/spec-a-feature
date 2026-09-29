@@ -890,7 +890,7 @@ The course admin shall be able to cancel the use case at any time prior to submi
 ### **UC-SEC-remind-missing-submissions: The instructor reminds students of missing submissions**
 
 **UC ID and Name:** UC-SEC-remind-missing-submissions: Remind students of missing submissions
-**Created By:** Leiton Peterson with Codex drafting assistance; pending student review
+**Created By:** Leiton Peterson with Codex drafting assistance
 **Date Created:** 2026-09-29
 **Primary Actor:** instructor
 **Secondary Actors:** email service
