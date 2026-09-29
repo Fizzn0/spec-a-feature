@@ -887,6 +887,62 @@ The course admin shall be able to cancel the use case at any time prior to submi
 **Assumptions:**
 **Open Issues:**
 
+### **UC-SEC-remind-missing-submissions: The instructor reminds students of missing submissions**
+
+**UC ID and Name:** UC-SEC-remind-missing-submissions: Remind students of missing submissions
+**Created By:** Leiton Peterson with Codex drafting assistance; pending student review
+**Date Created:** 2026-09-29
+**Primary Actor:** instructor
+**Secondary Actors:** email service
+**Trigger:** The instructor opens submission status for a course section.
+**Description:** The instructor checks separate weekly activity report and peer evaluation statuses, then reminds one student or all eligible students who still have missing work.
+
+**Preconditions:**
+- PRE-1. The instructor is authenticated.
+- PRE-2. The instructor has access to the selected course section under BR-section-scoped-access and BR-role-based-access.
+
+**Postconditions:**
+- POST-1. The instructor sees separate submission statuses for each student and the selected reporting week.
+- POST-2. For a reminder action, the system reports accepted, skipped, and failed outcomes; reminders contain only the recipient's eligible missing items.
+- POST-3. Reminder outcomes are recorded without changing submission records.
+
+**Main Success Scenario:**
+1. The instructor selects a course section and reporting week.
+2. The system verifies access and displays all enrolled students with separate weekly activity report and peer evaluation statuses, due dates, and reminder eligibility under the cited business rules.
+3. The instructor selects "Remind All Missing."
+4. The system determines eligible recipients across the selected course section, including students beyond the visible page, and combines each recipient's eligible missing items into one email.
+5. The system sends each recipient a separate email and records the result without disclosing other students' information.
+6. The system displays the number of emails accepted, skipped students with reasons, and failed students with reasons, and refreshes the statuses.
+7. Use case ends.
+
+**Extensions:**
+- **1a. Invalid reporting week:** The system explains the invalid value and returns to step 1 without sending anything.
+- **2a. Access denied:** The system refuses the request without returning student identities or statuses; use case ends. Authorization also applies to direct reminder requests.
+- **2b. Student has no team or is deactivated:** The system shows the missing/completed status where applicable with an ineligibility reason, disables that student's Remind button, and excludes the student from bulk reminders.
+- **2c. Peer evaluation week is inactive or its submission window is closed:** The system shows "Not required - inactive week" or "Missing - window closed" as applicable and disables reminders for that item. Weekly activity report eligibility is evaluated independently.
+- **2d. Previously submitted work was deleted:** The system recomputes status from the remaining records under BR-reminder-submission-status; eligible missing work can be reminded again subject to BR-reminder-frequency.
+- **3a. Individual reminder:** The instructor selects "Remind" beside one student. Steps 4-6 apply only to that student.
+- **3b. View only:** The instructor leaves without choosing either reminder action; no email is sent and use case ends.
+- **4a. No eligible missing items:** The system sends nothing and explains that work is complete, ineligible, or already reminded; continue at step 6.
+- **4b. Repeated reminder:** The system skips items restricted by BR-reminder-frequency, includes other eligible missing items, and reports the restriction at step 6.
+- **5a. Mail server rejects a recipient:** The system records the failure, continues with other recipients, and reports the failed recipient at step 6. A definite rejection does not count as a successful reminder.
+- **5b. System failure interrupts the batch:** The system preserves completed outcomes, reports known failures and unprocessed recipients, and does not claim that the whole batch succeeded. Previously accepted emails cannot be rolled back.
+
+**Priority:** High
+**Frequency of Use:** Estimated one status review per instructor per week, with individual or bulk reminders as needed during the week.
+**Business Rules:** BR-section-scoped-access, BR-role-based-access, BR-team-scoped-access, BR-team-assignment-required, BR-student-lifecycle, BR-active-weeks, BR-evaluation-submission-window, BR-evaluation-editable-until-close, BR-reminder-submission-status, BR-reminder-eligibility, BR-reminder-frequency
+
+**Associated Information:**
+- Selection: A reporting week is an ISO week including its week-based year, defaulting to the previous week. Future reporting weeks are not offered. The list covers every enrolled student, including completed and ineligible students.
+- Display: Show student name, reporting week, separate submission statuses, relevant due dates, and reasons a reminder is unavailable. A student's Remind button is enabled when at least one item is eligible; Remind All Missing is enabled when at least one student qualifies. Bulk scope is the selected course section and reporting week, regardless of pagination or a display-only search filter.
+- Email: Include the recipient's name, course section, reporting week, eligible missing item names, the relevant configured due dates/times, and a link to Project Pulse. Label passed due dates as overdue instead of claiming they are upcoming. Never include another student's name, address, status, evaluation scores, or comments. CO-ferpa applies to status data and reminder outcomes.
+- Privacy: Students cannot access this instructor status list or trigger its reminder actions. Each email has only its intended student as recipient; no group To/CC list is used.
+- Scope: This use case covers the instructor's review-and-remind goal. The related scheduled workflow is "Send scheduled reminders for missing submissions," triggered by time rather than the instructor. It must apply the shared reminder business rules to items due that day, keep the existing reminder enable switch and configured schedule, and continue past recipient failures. The current FR-NOT-weekly-reminder describes the old all-students behavior; aligning that requirement and the implementation is future work outside this two-file specification assignment.
+- Design freedom: Component names, endpoint names, query strategy, button styling, sorting, and email wording are left to implementation, provided they preserve the specified behavior, content, privacy, and outcomes.
+
+**Assumptions:** Existing saved records have passed their authoring validation. This feature does not introduce a separate report-finalization action or change submission deadlines.
+**Open Issues:** Student review of this AI-assisted draft is pending.
+
 ## **Team**
 
 ### **UC-TEA-find-teams: The course admin/instructor finds teams**
