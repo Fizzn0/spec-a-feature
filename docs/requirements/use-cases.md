@@ -903,7 +903,7 @@ The course admin shall be able to cancel the use case at any time prior to submi
 
 **Postconditions:**
 - POST-1. The instructor sees separate submission statuses for each student and the selected reporting week.
-- POST-2. For a reminder action, the system reports accepted, skipped, and failed outcomes; reminders contain only the recipient's eligible missing items.
+- POST-2. For a reminder action, the system reports accepted, skipped, failed, unknown, and unprocessed outcomes; reminders contain only the recipient's eligible missing items.
 - POST-3. Reminder outcomes are recorded without changing submission records.
 
 **Main Success Scenario:**
@@ -911,8 +911,8 @@ The course admin shall be able to cancel the use case at any time prior to submi
 2. The system verifies access and displays all enrolled students with separate weekly activity report and peer evaluation statuses, due dates, and reminder eligibility under the cited business rules.
 3. The instructor selects "Remind All Missing."
 4. The system determines eligible recipients across the selected course section, including students beyond the visible page, and combines each recipient's eligible missing items into one email.
-5. The system sends each recipient a separate email and records the result without disclosing other students' information.
-6. The system displays the number of emails accepted, skipped students with reasons, and failed students with reasons, and refreshes the statuses.
+5. Immediately before each send attempt, the system rechecks instructor authorization, current enrollment and account/team eligibility, saved submission records, submission windows, and the shared reminder allowance; it rebuilds the email from the still-eligible items, reserves their allowance under BR-reminder-frequency, sends a separate email, and records the result without disclosing other students' information.
+6. The system displays per-student accepted, skipped, failed, unknown, or unprocessed outcomes and their counts, identifies the item types included or skipped with reasons, and refreshes the statuses. "Accepted" means accepted by the mail server, not confirmed inbox delivery.
 7. Use case ends.
 
 **Extensions:**
@@ -925,19 +925,21 @@ The course admin shall be able to cancel the use case at any time prior to submi
 - **3b. View only:** The instructor leaves without choosing either reminder action; no email is sent and use case ends.
 - **4a. No eligible missing items:** The system sends nothing and explains that work is complete, ineligible, or already reminded; continue at step 6.
 - **4b. Repeated reminder:** The system skips items restricted by BR-reminder-frequency, includes other eligible missing items, and reports the restriction at step 6.
-- **5a. Mail server rejects a recipient:** The system records the failure, continues with other recipients, and reports the failed recipient at step 6. A definite rejection does not count as a successful reminder.
-- **5b. System failure interrupts the batch:** The system preserves completed outcomes, reports known failures and unprocessed recipients, and does not claim that the whole batch succeeded. Previously accepted emails cannot be rolled back.
+- **5a. State changed since the list was displayed:** The system skips newly completed or ineligible items and sends only any remaining eligible items, reporting the change at step 6. If instructor access was revoked, it stops the batch without revealing further student data. The eligibility decision is based on the final check before attempting delivery; a submission arriving after that check cannot recall an email already in progress.
+- **5b. Mail server rejects a recipient:** The system records the failure, continues with other recipients, and reports the failed recipient at step 6. A definite rejection does not count as a successful reminder.
+- **5c. System failure interrupts the batch:** The system preserves completed outcomes, reports known failures and unprocessed recipients, and does not claim that the whole batch succeeded. A timeout, lost acknowledgement, or interrupted attempt whose acceptance cannot be determined is reported as "Unknown - delivery not confirmed" and retains its allowance under BR-reminder-frequency; it is not automatically resent. Recipients not yet attempted remain unprocessed and can be requested again. Previously accepted emails cannot be rolled back. If the result page is disconnected, reconnecting shows recorded outcomes before a new request is allowed.
 
 **Priority:** High
 **Frequency of Use:** Estimated one status review per instructor per week, with individual or bulk reminders as needed during the week.
-**Business Rules:** BR-section-scoped-access, BR-role-based-access, BR-team-scoped-access, BR-team-assignment-required, BR-student-lifecycle, BR-active-weeks, BR-evaluation-submission-window, BR-evaluation-editable-until-close, BR-reminder-submission-status, BR-reminder-eligibility, BR-reminder-frequency
+**Business Rules:** BR-section-scoped-access, BR-role-based-access, BR-team-scoped-access, BR-team-assignment-required, BR-student-lifecycle, BR-active-weeks, BR-evaluation-submission-window, BR-evaluation-editable-until-close, BR-reminder-submission-status, BR-reminder-eligibility, BR-reminder-frequency, BR-reminder-calendar
 
 **Associated Information:**
 - Selection: A reporting week is an ISO week including its week-based year, defaulting to the previous week. Future reporting weeks are not offered. The list covers every enrolled student, including completed and ineligible students.
 - Display: Show student name, reporting week, separate submission statuses, relevant due dates, and reasons a reminder is unavailable. A student's Remind button is enabled when at least one item is eligible; Remind All Missing is enabled when at least one student qualifies. Bulk scope is the selected course section and reporting week, regardless of pagination or a display-only search filter.
+- Timing and configuration: Interpret reporting weeks, calendar days, and due dates under BR-reminder-calendar. An item with a missing configured due day or due time is marked "Reminder unavailable - due date not configured" and excluded from both reminder actions and the scheduled workflow; other configured items remain eligible.
 - Email: Include the recipient's name, course section, reporting week, eligible missing item names, the relevant configured due dates/times, and a link to Project Pulse. Label passed due dates as overdue instead of claiming they are upcoming. Never include another student's name, address, status, evaluation scores, or comments. CO-ferpa applies to status data and reminder outcomes.
 - Privacy: Students cannot access this instructor status list or trigger its reminder actions. Each email has only its intended student as recipient; no group To/CC list is used.
-- Scope: This use case covers the instructor's review-and-remind goal. The related scheduled workflow is "Send scheduled reminders for missing submissions," triggered by time rather than the instructor. It must apply the shared reminder business rules to items due that day, keep the existing reminder enable switch and configured schedule, and continue past recipient failures. The current FR-NOT-weekly-reminder describes the old all-students behavior; aligning that requirement and the implementation is future work outside this two-file specification assignment.
+- Scope: This use case covers the instructor's review-and-remind goal. The related scheduled workflow is "Send scheduled reminders for missing submissions," triggered by time rather than the instructor. It must apply the shared reminder business rules to items due that day, keep the existing reminder enable switch and configured schedule, and recheck eligibility immediately before each attempt, apply the same accepted/failed/unknown distinctions, and continue past recipient or section failures. A failure to determine eligibility sends nothing for the affected recipient and is recorded as an error; completion is never assumed. The current FR-NOT-weekly-reminder describes the old all-students behavior; aligning that requirement and the implementation is future work outside this two-file specification assignment.
 - Design freedom: Component names, endpoint names, query strategy, button styling, sorting, and email wording are left to implementation, provided they preserve the specified behavior, content, privacy, and outcomes.
 
 **Assumptions:** Existing saved records have passed their authoring validation. This feature does not introduce a separate report-finalization action or change submission deadlines.
